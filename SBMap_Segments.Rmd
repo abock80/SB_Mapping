@@ -1,0 +1,92 @@
+---
+title:  "Automating map generation for Montana Watersheds data"
+author:  "abock@usgs.gov"
+output: pdf_document
+---
+This document is a summary of work and code being developed for the CDI project "Automated Mapping of SB OBjects"
+
+## Loading Libraries
+
+R libraries required - *sbtools*, *sp*, *gdalUtils*, *RCurl*, *RColorBrewer*, *maps*, *mapdata*
+Functions are a part of package specificed (*sbtools::item_get*  *item_get* is function in *sbtools* library)
+Functions utilizing the libraries *maps* and *mapdata* need to have libraries loaded to access the databases 
+
+
+```{r}
+# sb tools is the CIDA developed ScienceBase access library
+#suppressWarnings(suppressMessages(library(sbtools)))
+suppressWarnings(suppressMessages(library(maps)))
+suppressWarnings(suppressMessages(library(mapdata)))
+```
+
+## Calling up items from ScienceBase
+
+I've set up a test page with Kathy's segments, watersheds, and data.  To access the information for the SBase item, use the following code which utilizes an items Science Base ID **57114f7be4b0ef3b7ca554e8**.  The function *list_files* shows the data files associated with the SB item as well as the download urls.
+
+```{r }
+test_item=sbtools::item_get("57114f7be4b0ef3b7ca554e8")
+names(test_item)
+#parent<-item_get(test_item$parentId)
+#item_list_children(parent)
+sbtools::item_list_files(test_item)
+```
+
+The function *item_get_wfs* retrieves the web feature service that is featured on the SB item's front page.  The map can then be displayed. 
+
+```{r }
+layer<-sbtools::item_get_wfs("57114f7be4b0ef3b7ca554e8")
+# re-project layer to decimal degrees, WGS84
+layer_dd<-sp::spTransform(layer,"+init=epsg:4326")
+map('state','montana')
+sp::plot(layer_dd,add=TRUE)
+```
+
+## Retrieving SB Data
+
+Next step is to retrieve the environmental data/variables and map them to the WFS.  The function *getURL* from the *RCurl* library retrieves the URL for each file, and downloads and opens the file to a local directory.
+
+```{r }
+sbfiles<-sbtools::item_list_files(test_item)
+print(sbfiles)
+data <- RCurl::getURL(sbfiles$url[1])
+data2 <- read.csv(text=data)
+names(data2)
+```
+
+## Setting up the plot
+
+Next we set up the plotting.  We can use the library *RColorBrewer* to automatically assign a 4-color symbology; alternatively this is something we can decide ourselves (such as in Roy's example maps).  Then accessing the properties of one of environmental variables, bound these colors by the min/max and three quartiles.  The base plotting function *op* assigns a font for title, legend, and axes.  The *mar* function creates space along the plotting margins, so a legend can be partially fit.  
+
+```{r }
+colPal<-RColorBrewer::brewer.pal(4,"Set1")
+# hard breaks for symbology
+#fixedBreaks=c(-30,-15,0,15,30)
+fixedBreaks=c(min(data2$FiftyFives), quantile(data2$FiftyFives,.25),median(data2$FiftyFives),quantile(data2$FiftyFives,.75),max(data2$FiftyFives))
+symb<-cut(data2$FiftyFives,breaks=fixedBreaks,include.lowest=TRUE,right=TRUE)
+
+op<-par(family="serif")
+
+par(mar=c(0,0,0,16))
+```
+
+
+This next set of code is similar to the code that generates Roy's locations and data.  The function *par(xpd=TRUE)* will add the legend (on the following line) partially outside the plotting area.  Right now the legend is being cut off of the right side; I need to update my Rstudio version to see if there is a fix for this.
+
+
+```{r}
+sp::plot(layer_dd,col=colPal[symb],border=FALSE)
+map('state','montana',add=TRUE)
+map('rivers',add=TRUE,col=4,lwd=4)
+mtext("Some Title",cex=2,line=0)
+box(which="plot",lty="solid")
+
+cutsChar<-as.character(symb)
+cuts<-as.numeric(levels(factor (fixedBreaks)))
+mapLegend = c(paste(cuts[1]," to ",cuts[2],sep=""),paste(cuts[2]," to ",cuts[3],sep=""),paste(cuts[3]," to ",cuts[4],sep=""),
+              paste(cuts[4]," to ",cuts[5],sep=""))
+#par(xpd=NA,font=21)
+par(xpd=TRUE)
+legend("topright",inset=c(-0.3,0), legend=mapLegend, fill=colPal,col=colPal,title="Title (units)",horiz=F,bty="y")
+
+par(op)
+```
