@@ -28,11 +28,47 @@ symb<-cut(layer@data$M2p25,breaks=fixedBreaks,include.lowest=TRUE,right=TRUE)
 leaflet(layer) %>% addCircles(color = colPal[symb]) %>% addTiles() 
 # explore setMapBounds, setView
 
-# NHD server behind points
-# shaded relief - http://basemap.nationalmap.gov/arcgis/services/USGSShadedReliefOnly/MapServer/WMSServer?
-leaflet(layer) %>% addCircles(color = colPal[symb]) %>% addWMSTiles(
-  "http://basemap.nationalmap.gov/arcgis/services/USGSHydroNHD/MapServer/WMSServer?",
-  layers="0",
-  options = WMSTileOptions(format = "image/png", transparent = TRUE),
-  attribution = ""
+# begin the shiny ui
+# I have not played around with the interactivity options yet
+# (actionButton)
+ui <- fluidPage(
+  leafletOutput("mymap"),
+  p(),
+  actionButton("recalc", "New points")
 )
+
+
+# This instance utilizes the NHD WGS service.  Unforunately this draws very slowly, and 
+# does not properly display at certain scales.  I have not tried any of the other WGS
+# services yet as background maps.
+# This example is also not properly sized.
+server <- function(input, output, session) {
+  
+  points <- eventReactive(input$recalc, {layer
+  }, ignoreNULL = FALSE)
+  
+  output$mymap <- renderLeaflet({
+    leaflet() %>%
+      addWMSTiles(
+        "http://basemap.nationalmap.gov/arcgis/services/USGSHydroNHD/MapServer/WMSServer?",
+        layers="0",
+        options = WMSTileOptions(format = "image/png", transparent = TRUE),
+        attribution = ""
+      ) %>%
+      addCircles(data = points(),color = colPal[symb])
+  })
+}
+
+
+shinyApp(ui, server)
+
+
+#*****************************************************************
+## NHD server behind points
+## shaded relief - http://basemap.nationalmap.gov/arcgis/services/USGSShadedReliefOnly/MapServer/WMSServer?
+#leaflet(layer) %>% addCircles(color = colPal[symb]) %>% addWMSTiles(
+#  "http://basemap.nationalmap.gov/arcgis/services/USGSHydroNHD/MapServer/WMSServer?",
+#  layers="0",
+#  options = WMSTileOptions(format = "image/png", transparent = TRUE),
+#  attribution = ""
+#)

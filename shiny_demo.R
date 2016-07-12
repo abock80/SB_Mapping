@@ -2,6 +2,29 @@ library(shiny)
 library(leaflet)
 library(RColorBrewer)
 
+
+# # get the SB item information
+# # this is Roy's fisheries data
+# test_item<-sbtools::item_get("57115024e4b0ef3b7ca554f3")
+# names(test_item)
+# parent<-sbtools::item_get(test_item$parentId)
+# sbtools::item_list_children(parent)
+# sbtools::item_list_files(test_item)
+# 
+# 
+# # get the WFS
+# # In this instance, the attribute fields are part of the shapefile
+# # and no join between the wfs and attached files is performed
+# layer<-sbtools::item_get_wfs("57115024e4b0ef3b7ca554f3")
+# 
+# # define an automated color ramp for this example
+# colPal<-RColorBrewer::brewer.pal(4,"Set1")
+# fixedBreaks=c(min(layer@data$M2p25), quantile(layer@data$M2p25,.25),median(layer@data$M2p25),quantile(layer@data$M2p25,.75),max(layer@data$M2p25))
+# symb<-cut(layer@data$M2p25,breaks=fixedBreaks,include.lowest=TRUE,right=TRUE)
+
+summary(quakes)
+dim(quakes)
+
 ui <- bootstrapPage(
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
   leafletOutput("map", width = "100%", height = "100%"),

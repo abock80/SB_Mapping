@@ -66,7 +66,7 @@ This next set of code plots the spatial objects.  The R library *maps* and *mapd
 ```{r }
 map('state','montana')
 map('rivers',add=TRUE,col=4,lwd=4)
-sp::plot(layer,col=colPal[symb],pch=16,add=TRUE)
+sp::plot(layer,pch=16,add=TRUE)
 box(which="plot",lty="solid")
 ```
 
@@ -77,6 +77,7 @@ Next we set up the plotting.  We can use the library *RColorBrewer* to automatic
 ```{r }
 #colPal<-c("#00A4DE","#5DFC21","#FFD701","#FF3300")
 colPal<-RColorBrewer::brewer.pal(4,"Set1")
+print(colPal)
 #fixedBreaks=c(-30,-15,0,15,30)
 fixedBreaks=c(min(sites2$M2p25), quantile(sites2$M2p25,.25),median(sites2$M2p25),quantile(sites2$M2p25,.75),max(sites2$M2p25))
 symb<-cut(sites2$M2p25,breaks=fixedBreaks,include.lowest=TRUE,right=TRUE)
