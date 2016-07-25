@@ -4,6 +4,15 @@
 library(maps)
 library(mapdata)
 
+#*******************************************
+## for Kathy's data link to GeoFab
+## get the WFS
+#layer<-sbtools::item_get_wfs("57114f7be4b0ef3b7ca554e8")
+## find the projection of the shapefile
+#print(sp::proj4string(layer))
+## check to see if item is in WGS84
+## re-project layer to decimal degrees, WGS84
+# layer_dd<-sp::spTransform(layer,"+init=epsg:4326")
 
 #*****************************************************************************
 # set up plot options and make example plot with one data series
