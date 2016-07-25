@@ -1,6 +1,8 @@
 library(leaflet)
 library(shiny)
 
+print ("test")
+
 # this is a demo of the shiny/leaflet application of creating
 # an interactive map from a SBitem
 
