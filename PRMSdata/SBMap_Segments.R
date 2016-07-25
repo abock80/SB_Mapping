@@ -1,175 +1,142 @@
-# R libraries required - sbtools, sp, gdalUtils, RCurl, RColorBrewer, maps, mapdata
+# function to add the column names for each site or the GCM names to the dataframe
+colN<-function(DF,site){
+  print(site)
+  colnames(DF)<-paste(colnames(DF),"_",site,sep="")
+  return (DF)
+}
+
+# current function for seasonal means
+# need to test out
+seasonalMeans<-function(DF){
+  TS<-xts::as.xts(DF)
+  print(TS)
+  win<-TS[.indexmon(TS) %in% c(1,2,3)]
+  spr<-colMeans(TS[.indexmon(TS) %in% c(4,5,6)])
+  sum<-colMeans(TS[.indexmon(TS) %in% c(7,8,9)])
+  fall<-colMeans(TS[.indexmon(DF) %in% c(10,11,12)])
+  seas<-cbind(win,spr,sum,fall)
+  colnames(seas)<-c("win","spr","sum","fall")
+  return(seas)
+}
+
+print("yowzer!!")
+#**********************************************************************************************************
 # functions are a part of package specificed (sbtools::item_get - item_get is function in sbtools library)
-# Functions on line 49-50 need to have the libraries loaded (maps,mapdata) to access the databases 
-library(maps)
-library(mapdata)
 
 # get the SB item information
 # kathy's data on my page - 57114f7be4b0ef3b7ca554e8
 # This is the SB id for the CDI Project - 56f419c5e4b0f59b85e0bc5d
-# This is the SB id for Kathy's Project - 5522bdf7e4b027f0aee3d039
+# This is the SB id for Kathy's PRMS Project - 5522bdf7e4b027f0aee3d039
 # This is the child SB id for Kathy's Streamflow data - 55b69c6ae4b09a3b01b5f653
-test_item<-sbtools::item_get("5522bdf7e4b027f0aee3d039")
-names(test_item)
-# No parents for Kathy's item
-#parent<-sbtools::item_get(test_item$parentId)
-children<-sbtools::item_list_children(test_item)
-#Kathy's streamflow data, extract the sciencebase ID of item
+PRMS_item<-sbtools::item_get("5522bdf7e4b027f0aee3d039")
+names(PRMS_item)
+# The PRMS streamflow data is a child ("Appendix 2") of Kathy's data
+children<-sbtools::item_list_children(PRMS_item)
+# We need the ScienceBase Id of Kathy's streamflow da"ta, 
+# To do this we extract the "tail" of the URL of the child item
 sFlow_SBid<-tail(unlist(strsplit(children[[2]]$link$url,"/")),1)
 #Create object for the SFlow data
 child_item<-sbtools::item_get(sFlow_SBid)
 
-#*******************************************
-## for Kathy's data link to GeoFab
-## get the WFS
-#layer<-sbtools::item_get_wfs("57114f7be4b0ef3b7ca554e8")
-## find the projection of the shapefile
-#print(sp::proj4string(layer))
-## check to see if item is in WGS84
-## re-project layer to decimal degrees, WGS84
-# layer_dd<-sp::spTransform(layer,"+init=epsg:4326")
-
-# region10u
-# use this for now, need to talk to Roland about national WFS
-layer_GF<-sbtools::item_get_wfs("571559c2e4b0ef3b7ca864c7")
-#************************************************************
-# Operations for the entire dataset
-# get the data
-# downloads to a local directory
-#item_file_download(test_item,dest_dir="d:/abock/temp")
+#********************************************************************************************************
+#********************************************************************************************************
+# List the streamflow files from Appendix2
 sbFiles<-sbtools::item_list_files(child_item)
-print(sbFiles)
+print(sbFiles$fname)
+
 # find files based on grep of basin name, year, and gcm name
-#baseLine<-grep(paste(c("RW","1982","BASELINE"),collapse="_"),sbFiles$fname)
 baseLine<-grep(paste(c("1982","BASELINE"),collapse="_"),sbFiles$fname)
-#future<-grep(paste(c("RW","2055","GFDL"),collapse="_"),sbFiles$fname)
+# one GCM for all sites
 future<-grep(paste(c("2055","GFDL"),collapse="_"),sbFiles$fname)
+# all GCMs for all sites
+future_All<-grep(paste(c("2055"),collapse="_"),sbFiles$fname)
 
-# order to stich together files
-# - O'Fallon (OF), Redwater River (RW), Little Dry Creek (LD), Middle Musselshell (MM),
-# Judith (JD), Cottonwood Creek (CD), Belt Creek (BT)
+# Hardcoded wastershed and GCM names for column names
+msites<-c("OF","RW","LD","MM","JD","CD","BT")
+gcms<-c("ECHAM5","GENMON","GFDL")
 
-# retrieve baseflow data for all sites
+# retrieve baseline data for all sites
 baseFlow<-lapply(sbFiles$url[baseLine],RCurl::getURL)
+# function to open all files as data frames
 baseAll<-lapply(baseFlow,function(i){
   read.csv(text=unlist(i),row.names=1)
 })
+# Add column names 
+baseAll<-mapply(colN,baseAll,msites,SIMPLIFY=F)
+# bind the data frames together
 baseData<-dplyr::bind_cols(baseAll)
+# Add timestamps as row names
 row.names(baseData)<-rownames(baseAll[[1]])
 
-
+# Perform the same tasks, but for the GCM data
 futFlow<-lapply(sbFiles$url[future],RCurl::getURL)
 futAll<-lapply(futFlow,function(i){
   read.csv(text=unlist(i),row.names=1)
 })
+futAll<-mapply(colN,futAll,msites,c(1:7),SIMPLIFY=F)
 futData<-dplyr::bind_cols(futAll)
 rownames(futData)<-rownames(futAll[[1]])
 
-#Means
+# remove segments 32 and 34 from the data frames (MM river)
+baseData<-baseData[,!colnames(baseData) %in% c("seg.32_MM","seg.34_MM")]
+futData<-futData[,!colnames(futData) %in% c("seg.32_MM","seg.34_MM")]
+
+#Get the means and change from baseline for each feature
 baseMeans<-colMeans(baseData)
 futMeans<-colMeans(futData)
-#*****************************************************************************
-# Operations for a single segment and multiple GCMs using O'Fallon Creek as an example
+perChange<-((futData-baseData)/baseData)*100
+#********************************************************************************************************
+#********************************************************************************************************
+# Operations to retrieve data for a single segment and multiple GCMs using O'Fallon Creek as an example
 baseLine_OF<-grep(paste(c("OF","1982","BASELINE"),collapse="_"),sbFiles$fname)
 future_OF<-grep(paste(c("OF","2055"),collapse="_"),sbFiles$fname)
 
 # retrieve baseflow data for all sites
 baseOF <- RCurl::getURL(sbFiles$url[baseLine_OF])
-baseOF2 <- read.csv(text=base)
+baseOF2 <- read.csv(text=baseOF)
 names(baseOF2)
-
 
 futOF<-lapply(sbFiles$url[future_OF],RCurl::getURL)
 futAllOF<-lapply(futOF,function(i){
   read.csv(text=unlist(i),row.names=1)
 })
-futDataOF<-dplyr::bind_cols(futAllOF)
+sNames<-unique(colnames(futAllOF[[1]]))
+futAllOF2<-mapply(colN,futAllOF,gcms,c(1:3),SIMPLIFY=F)
+futDataOF<-dplyr::bind_cols(futAllOF2)
 futDataOF$date<-rownames(futAllOF[[1]])
 
-# get mean monthly data
-baseZoo<-read.zoo(baseOF2,index.column=1,format="%Y-%m-%d")
-futZoo<-read.zoo(futDataOF,index.column=length(colnames(futDataOF)),format="%Y-%m-%d")
+# get mean monthly data into a zoo series
+baseZoo<-zoo::read.zoo(baseOF2,index.column=1,format="%Y-%m-%d")
+futZoo<-zoo::read.zoo(futDataOF,index.column=length(colnames(futDataOF)),format="%Y-%m-%d")
 
+futAll<-mapply(colN,futAll,msites,c(1:7),SIMPLIFY=F)
+
+# get mean monthly data
 options(warn=-1)
 FutMM <- aggregate(futDataOF, list(data.table::month(as.Date(futDataOF$date))), mean,na.rm=T)
 baseMM <- aggregate(baseOF2, list(data.table::month(as.Date(futDataOF$date))), mean, na.rm=T)
+sCols<-FutMM[grep("seg",names(FutMM),value=TRUE)]
+fut_byMonth<-data.frame(matrix(unlist(lapply(sNames,function(x) rowMeans(FutMM[grep(paste(x,"_",sep=""),names(FutMM),value=TRUE)]))),
+                               nrow=12,byrow=F))
 options(warn=0)
-#*****************************************************************************
-# set up plot options and make example plot with one data series
-# color palette from RcolorBrewer
-colPal<-RColorBrewer::brewer.pal(4,"Set1")
-# Map sites2$M2p25
-# hard breaks for symbology
-#fixedBreaks=c(-30,-15,0,15,30)
-fixedBreaks=c(min(data2$FiftyFives), quantile(data2$FiftyFives,.25),median(data2$FiftyFives),quantile(data2$FiftyFives,.75),max(data2$FiftyFives))
-symb<-cut(data2$FiftyFives,breaks=fixedBreaks,include.lowest=TRUE,right=TRUE)
+#*******************************************************************************************
+#*******************************************************************************************
+# Mapping Components
+# WFS for R10U
+layer<-sbtools::item_get_wfs("571559c2e4b0ef3b7ca864c7")
+# need to order the basin names and segs like they are in line 41 sbmaps_segments
+segMap<-read.csv("d:/abock/CDI_Mapping/SB_Mapping/PRMSdata/Streamsegments_Qchange_Buffer.csv",header=T,row.names=1)
+segMap<-segMap[-c(186,187),]
+# order by POI_ID
+segMap<-segMap[with(segMap,order(POI_ID)),]
 
-op<-par(family="serif")
+#GFsegs_buffer<-rgeos::gBuffer(GF_segs,byid=FALSE,width=100,capStyle="ROUND",joinStyle="ROUND")
+finalSegs<-sp::spTransform(layer,"+init=epsg:4326")
+finalSegs<-finalSegs[with(finalSegs@data,order(POI_ID)),]
+#Need to join segments to sites, and order them
+finalSegs_joined<-dplyr::inner_join(finalSegs@data,segMap,by="POI_ID")
 
-par(mar=c(5.1,4.1,4.1,8.1))
-
-sp::plot(layer_dd,col=colPal[symb],border=FALSE)
-map('state','montana',add=TRUE)
-map('rivers',add=TRUE,col=4,lwd=4)
-mtext("Some Title",cex=2,line=0)
-box(which="plot",lty="solid")
-
-cutsChar<-as.character(symb)
-cuts<-as.numeric(levels(factor (fixedBreaks)))
-mapLegend = c(paste(cuts[1]," to ",cuts[2],sep=""),paste(cuts[2]," to ",cuts[3],sep=""),paste(cuts[3]," to ",cuts[4],sep=""),
-              paste(cuts[4]," to ",cuts[5],sep=""))
-#par(xpd=NA,font=21)
-par(xpd=TRUE)
-legend("topright",inset=c(-0.3,0), legend=mapLegend, fill=colPal,col=colPal,title="Title (units)",horiz=F,bty="y")
-
-par(op)
-
-#****************************************************
-##Other plotting Options
-#png("d:/abock/temp/test.png",height=1000,width=1000)
-#map('state','montana')
-## need to convert sites2 to spatial object
-#plot(layer,col=colPal[symb],pch=1,add=TRUE)
-#dev.off()
-#browseURL("d:/abock/temp/test.png")
+#Need to join segments to sites, and order them
 
 
-## plotting options 1 - png,devoff, browseURL
-## plotting options 2 - x11, devoff
-#x11()
-#map('state','montana')
-#map('rivers',add=TRUE,col=4)
-#plot(layer,col=colPal[symb],pch=1,add=TRUE)
-#dev.off()
 
-#****************************************************************
-#GDAL troubleshooting
-#http://trac.osgeo.org/osgeo4w/
-#https://stat.ethz.ch/pipermail/r-sig-geo/2016-January/023872.html
-
-#layer<-item_get_wfs("56699c83e4b08895842a1cee")
-#basins_wgs <- spTransform(layer, "+init=epsg:4326")
-
-#**************************
-## 7/12 - This RCurl will not work on non-public items
-## Retrieve the baseline data for a single site
-#base <- RCurl::getURL(sbfiles$url[baseLine])
-#base2 <- read.csv(text=base)
-#names(base2)
-
-#******************************
-#**************************************************************
-## If item is an internal item, so we must authenticate to access
-# sbtools::authenticate_sb("abock@usgs.gov")
-
-## how to download data that is non-public with authentication
-#data<-sbtools::item_file_download(test_item,dest_dir="d:/abock/temp")
-
-## option 2 for non-public data, autheticate with req
-##http://stackoverflow.com/questions/23286900/rcurl-basic-authentication-with-api-key
-#library(httr)
-#req <- GET(sbfiles$url[1], 
-#           authenticate("Username:abock@usgs.gov", "Password:Jay22Heyward!!", type = "basic"))
-#stop_for_status(req)
-#content(req)
-#data2 <- content(req)
