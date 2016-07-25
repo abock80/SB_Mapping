@@ -16,7 +16,7 @@ sbtools::item_list_files(test_item)
 # get the WFS
 # In this instance, the attribute fields are part of the shapefile
 # and no join between the wfs and attached files is performed
-layer<-sbtools::item_get_wfs("57115024e4b0ef3b7ca554f3")
+layer<-sbtools::item_get_wfs("571559c2e4b0ef3b7ca864c7")
 
 # define an automated color ramp for this example
 colPal<-RColorBrewer::brewer.pal(4,"Set1")
