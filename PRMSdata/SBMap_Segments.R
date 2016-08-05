@@ -1,25 +1,6 @@
-# function to add the column names for each site or the GCM names to the dataframe
-colN<-function(DF,site){
-  print(site)
-  colnames(DF)<-paste(colnames(DF),"_",site,sep="")
-  return (DF)
-}
+setwd("d:/abock/CDI_Mapping/SB_Mapping/PRMSdata")
+source("func.R")
 
-# current function for seasonal means
-# need to test out
-seasonalMeans<-function(DF){
-  TS<-xts::as.xts(DF)
-  print(TS)
-  win<-TS[.indexmon(TS) %in% c(1,2,3)]
-  spr<-colMeans(TS[.indexmon(TS) %in% c(4,5,6)])
-  sum<-colMeans(TS[.indexmon(TS) %in% c(7,8,9)])
-  fall<-colMeans(TS[.indexmon(DF) %in% c(10,11,12)])
-  seas<-cbind(win,spr,sum,fall)
-  colnames(seas)<-c("win","spr","sum","fall")
-  return(seas)
-}
-
-print("yowzer!!")
 #**********************************************************************************************************
 # functions are a part of package specificed (sbtools::item_get - item_get is function in sbtools library)
 
@@ -44,81 +25,64 @@ child_item<-sbtools::item_get(sFlow_SBid)
 sbFiles<-sbtools::item_list_files(child_item)
 print(sbFiles$fname)
 
+
 # find files based on grep of basin name, year, and gcm name
 baseLine<-grep(paste(c("1982","BASELINE"),collapse="_"),sbFiles$fname)
 # one GCM for all sites
-future<-grep(paste(c("2055","GFDL"),collapse="_"),sbFiles$fname)
+#future<-grep(paste(c("2055","GFDL"),collapse="_"),sbFiles$fname)
 # all GCMs for all sites
-future_All<-grep(paste(c("2055"),collapse="_"),sbFiles$fname)
+future_All_2030<-grep(paste(c("2030"),collapse="_"),sbFiles$fname)
+future_All_2055<-grep(paste(c("2055"),collapse="_"),sbFiles$fname)
+future_All_2080<-grep(paste(c("2080"),collapse="_"),sbFiles$fname)
 
 # Hardcoded wastershed and GCM names for column names
 msites<-c("OF","RW","LD","MM","JD","CD","BT")
+# only 2 gcms for 2030, 3 for 2055, 2 for 2080
 gcms<-c("ECHAM5","GENMON","GFDL")
 
-# retrieve baseline data for all sites
-baseFlow<-lapply(sbFiles$url[baseLine],RCurl::getURL)
-# function to open all files as data frames
-baseAll<-lapply(baseFlow,function(i){
-  read.csv(text=unlist(i),row.names=1)
-})
-# Add column names 
-baseAll<-mapply(colN,baseAll,msites,SIMPLIFY=F)
-# bind the data frames together
-baseData<-dplyr::bind_cols(baseAll)
-# Add timestamps as row names
-row.names(baseData)<-rownames(baseAll[[1]])
+baseData<-sb2DF(baseLine,msites)
+avgBase<-colMeans(baseData)
 
-# Perform the same tasks, but for the GCM data
-futFlow<-lapply(sbFiles$url[future],RCurl::getURL)
-futAll<-lapply(futFlow,function(i){
-  read.csv(text=unlist(i),row.names=1)
-})
-futAll<-mapply(colN,futAll,msites,c(1:7),SIMPLIFY=F)
-futData<-dplyr::bind_cols(futAll)
-rownames(futData)<-rownames(futAll[[1]])
+cNames2030<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
+futData2030<-sb2DF(future_All_2030,cNames2030)
+Avg2030<-avGCM(futData2030,gcms[1:2],"2030")
+dep2030<-sweep(Avg2030,1,avgBase)*100
+#MM2030
+#Sea2030
 
-# remove segments 32 and 34 from the data frames (MM river)
-baseData<-baseData[,!colnames(baseData) %in% c("seg.32_MM","seg.34_MM")]
-futData<-futData[,!colnames(futData) %in% c("seg.32_MM","seg.34_MM")]
+cNames2055<-unlist(lapply(msites,function(x) paste(x,"_",gcms,sep="")))
+futData2055<-sb2DF(future_All_2055,cNames2055)
+Avg2055<-avGCM(futData2055,gcms,"2055")
+dep2055<-sweep(Avg2055,1,avgBase)*100
+#MM2055
+#Sea2055
+
+cNames2080<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
+futData2080<-sb2DF(future_All_2080,cNames2080)
+Avg2080<-avGCM(futData2080,gcms[1:2],"2080")
+dep2080<-sweep(Avg2080,1,avgBase)*100
+#MM2070
+#Sea2070
+
+AvgAll<-cbind(Avg2030,Avg2055,Avg2080)
 
 #Get the means and change from baseline for each feature
-baseMeans<-colMeans(baseData)
-futMeans<-colMeans(futData)
-perChange<-((futData-baseData)/baseData)*100
+perChange<-((AvgAll$MEAN_2030-avgBase)/avgBase)*100
 #********************************************************************************************************
 #********************************************************************************************************
+# Might need to make this a reactive function
+
 # Operations to retrieve data for a single segment and multiple GCMs using O'Fallon Creek as an example
-baseLine_OF<-grep(paste(c("OF","1982","BASELINE"),collapse="_"),sbFiles$fname)
-future_OF<-grep(paste(c("OF","2055"),collapse="_"),sbFiles$fname)
-
-# retrieve baseflow data for all sites
-baseOF <- RCurl::getURL(sbFiles$url[baseLine_OF])
-baseOF2 <- read.csv(text=baseOF)
-names(baseOF2)
-
-futOF<-lapply(sbFiles$url[future_OF],RCurl::getURL)
-futAllOF<-lapply(futOF,function(i){
-  read.csv(text=unlist(i),row.names=1)
-})
-sNames<-unique(colnames(futAllOF[[1]]))
-futAllOF2<-mapply(colN,futAllOF,gcms,c(1:3),SIMPLIFY=F)
-futDataOF<-dplyr::bind_cols(futAllOF2)
-futDataOF$date<-rownames(futAllOF[[1]])
-
-# get mean monthly data into a zoo series
-baseZoo<-zoo::read.zoo(baseOF2,index.column=1,format="%Y-%m-%d")
-futZoo<-zoo::read.zoo(futDataOF,index.column=length(colnames(futDataOF)),format="%Y-%m-%d")
-
-futAll<-mapply(colN,futAll,msites,c(1:7),SIMPLIFY=F)
+#baseLine_OF<-grep(paste(c("OF","1982","BASELINE"),collapse="_"),sbFiles$fname)
+baseLine_BT<-baseData[,grep("seg.17_BT",names(baseData))]
+#future_OF<-grep(paste(c("OF","2055"),collapse="_"),sbFiles$fname)
+future_BT<-futData2030[,grep("seg.17_BT",names(futData2030))]
+future_BT$means<-rowMeans(future_BT)
+dep_BT<-sweep(future_BT,1,baseLine_BT)*100
 
 # get mean monthly data
-options(warn=-1)
-FutMM <- aggregate(futDataOF, list(data.table::month(as.Date(futDataOF$date))), mean,na.rm=T)
-baseMM <- aggregate(baseOF2, list(data.table::month(as.Date(futDataOF$date))), mean, na.rm=T)
-sCols<-FutMM[grep("seg",names(FutMM),value=TRUE)]
-fut_byMonth<-data.frame(matrix(unlist(lapply(sNames,function(x) rowMeans(FutMM[grep(paste(x,"_",sep=""),names(FutMM),value=TRUE)]))),
-                               nrow=12,byrow=F))
-options(warn=0)
+FutMM <- aggregate(dep_BT, list(data.table::month(as.Date(rownames(dep_BT)))), mean,na.rm=T)
+
 #*******************************************************************************************
 #*******************************************************************************************
 # Mapping Components
@@ -130,13 +94,46 @@ segMap<-segMap[-c(186,187),]
 # order by POI_ID
 segMap<-segMap[with(segMap,order(POI_ID)),]
 
+# subset GF to just the segments we are intereted in
+GF_layer<-layer[which(layer@data$POI_ID %in% segMap$POI_ID),]
+
 #GFsegs_buffer<-rgeos::gBuffer(GF_segs,byid=FALSE,width=100,capStyle="ROUND",joinStyle="ROUND")
-finalSegs<-sp::spTransform(layer,"+init=epsg:4326")
+finalSegs<-sp::spTransform(GF_layer,"+init=epsg:4326")
 finalSegs<-finalSegs[with(finalSegs@data,order(POI_ID)),]
-#Need to join segments to sites, and order them
-finalSegs_joined<-dplyr::inner_join(finalSegs@data,segMap,by="POI_ID")
 
-#Need to join segments to sites, and order them
+# gets the xy points of each line
+res <- lapply(slot(finalSegs, "lines"), function(x) lapply(slot(x, "Lines"),
+                                                     function(y) slot(y, "coords")))
+#
+test<-lapply(res, function(x) c(max(unlist(x)),min(unlist(x))))
+Lats<-unlist(test)[c(TRUE,FALSE)]
+Longs<-unlist(test)[c(FALSE,TRUE)]
 
 
+#************JUNK*********************************
+#************JUNK*********************************
+# # retrieve baseline data for all sites
+# baseFlow<-lapply(sbFiles$url[baseLine],RCurl::getURL)
+# # function to open all files as data frames
+# baseAll<-lapply(baseFlow,function(i){
+#   read.csv(text=unlist(i),row.names=1)
+# })
+# # Add column names 
+# baseAll<-mapply(colN,baseAll,msites,SIMPLIFY=F)
+# # bind the data frames together
+# baseData<-dplyr::bind_cols(baseAll)
+# # Add timestamps as row names
+# row.names(baseData)<-rownames(baseAll[[1]])
 
+# # Perform the same tasks, but for the GCM data
+# futFlow<-lapply(sbFiles$url[future],RCurl::getURL)
+# futAll<-lapply(futFlow,function(i){
+#   read.csv(text=unlist(i),row.names=1)
+# })
+# futAll<-mapply(colN,futAll,msites,SIMPLIFY=F)
+# futData<-dplyr::bind_cols(futAll)
+# rownames(futData)<-rownames(futAll[[1]])
+
+## remove segments 32 and 34 from the data frames (MM river)
+#baseData<-baseData[,!colnames(baseData) %in% c("seg.32_MM","seg.34_MM")]
+#futData<-futData[,!colnames(futData) %in% c("seg.32_MM","seg.34_MM")]
