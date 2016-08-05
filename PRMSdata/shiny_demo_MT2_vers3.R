@@ -1,5 +1,6 @@
 library(shiny)
 library(leaflet)
+library(RColorBrewer)
 #http://stackoverflow.com/questions/34496597/leaflet-renderleaflet-not-working-in-shiny
 
 
