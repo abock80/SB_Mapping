@@ -11,6 +11,7 @@ dd2<-data.frame(y2030,y2055,y2080)
 
 
 ui <- fluidPage(
+  tags$style(type = "text/css", "html, body {width:100%;height:100%;font-family:\"Arial Narrow\",Arial,Sans-serif}"),
   sidebarLayout(
     sidebarPanel(
               selectInput("select", label = h3("Year"), 
