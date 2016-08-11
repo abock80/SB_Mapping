@@ -4,16 +4,22 @@ y2030=c('ECHAM5','GENMON','Mean',NA)
 y2055=c('ECHAM5','GENMON','GFDL','Mean')
 y2080=c('ECHAM5','GENMON','Mean',NA)
 dd2<-data.frame(y2030,y2055,y2080)
+yrs<-c('2030','2055','2080')
 
 ui<-shinyUI(fluidPage(
+
   titlePanel("Generic grapher"),
   sidebarLayout(
     mainPanel(
+      tags$style(type="text/css",
+                ".shiny-output-error { visibility: hidden; }",
+                ".shiny-output-error:before { visibility: hidden; }"
+      ),
       
-      #dataTableOutput(outputId="l"),
-      #dataTableOutput(outputId="w"),
       textOutput("text1"),
-      textOutput("text2")
+      textOutput("text2"),
+      textOutput("text3"),
+      textOutput("text4")
       
     ),
     sidebarPanel(
@@ -31,6 +37,7 @@ ui<-shinyUI(fluidPage(
 )
 
 server<-shinyServer(function(input, output, session){
+
   gcmNames <- eventReactive(input$do,{
     unlist(as.character(levels(dd2[,as.numeric(input$select)])))
   })
@@ -40,12 +47,33 @@ server<-shinyServer(function(input, output, session){
     updateRadioButtons(session, "GCMnames", choices = c(z), inline=TRUE,selected="")
   })
   
-  output$text1 <- renderText({ 
-    input$GCMnames
+  datum<-reactive({
+    try(data<-depAll[,paste(input$GCMnames,"_",fut_yr(),sep="")],silent=TRUE)
+    return(data)
   })
   
-  #output$l <- renderDataTable({ a() })
-  #output$w <- renderDataTable({ b() })  
+  fut_yr<-eventReactive(input$do,{
+    yr<-yrs[as.numeric(input$select)]
+    return(yr)
+  })
+  
+  output$text1 <- renderText({ 
+    input$GCMnames
+    #input$select
+  })
+  
+  output$text2 <- renderText({ 
+    input$select
+  })
+  
+  output$text3 <- renderText({ 
+    fut_yr()
+  }) 
+  
+  output$text4 <- renderText({ 
+    summary(datum())
+  })
+  
 })
 
 shinyApp(ui = ui, server = server)
