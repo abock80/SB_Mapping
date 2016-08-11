@@ -10,7 +10,7 @@ values<-list(y2030=c('ECHAM5','GENMON','Mean'),
 
 # radial buttons for GCMs 
 ui <- bootstrapPage(
-  tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
+  tags$style(type = "text/css", "html, body {width:100%;height:100%;font-family:\"Arial Narrow\",Arial,Sans-serif}"),
   leafletOutput("map", width = "100%", height = "100%"),
   #selectInput('selection', 'selection', c('GCM1',  'GCM2','GCM3','All'), 'GCM1'),
   absolutePanel(top=10,right=10,
