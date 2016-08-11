@@ -65,6 +65,7 @@ dep2080<-sweep(Avg2080,1,avgBase)*100
 #Sea2070
 
 AvgAll<-cbind(Avg2030,Avg2055,Avg2080)
+depAll<-cbind(dep2030,dep2055,dep2080)
 
 #Get the means and change from baseline for each feature
 perChange<-((AvgAll$MEAN_2030-avgBase)/avgBase)*100
@@ -86,7 +87,11 @@ FutMM <- aggregate(dep_BT, list(data.table::month(as.Date(rownames(dep_BT)))), m
 #*******************************************************************************************
 #*******************************************************************************************
 # Mapping Components
-# WFS for R10U
+# WFS for R10U - John "Dell" Long - pySB
+# subset of shapefiles on the project page
+# separate call to get subset of features from full WFS
+# use HRUs instead of segments or incremental contributing areas
+# change line segment width by value
 layer<-sbtools::item_get_wfs("571559c2e4b0ef3b7ca864c7")
 # need to order the basin names and segs like they are in line 41 sbmaps_segments
 segMap<-read.csv("d:/abock/CDI_Mapping/SB_Mapping/PRMSdata/Streamsegments_Qchange_Buffer.csv",header=T,row.names=1)
@@ -99,6 +104,8 @@ GF_layer<-layer[which(layer@data$POI_ID %in% segMap$POI_ID),]
 
 #GFsegs_buffer<-rgeos::gBuffer(GF_segs,byid=FALSE,width=100,capStyle="ROUND",joinStyle="ROUND")
 finalSegs<-sp::spTransform(GF_layer,"+init=epsg:4326")
+# This is the reprojection to WGS84 web mercator
+#finalSegs<-sp::spTransform(GF_layer,"+init=epsg:3857")
 finalSegs<-finalSegs[with(finalSegs@data,order(POI_ID)),]
 
 # gets the xy points of each line
