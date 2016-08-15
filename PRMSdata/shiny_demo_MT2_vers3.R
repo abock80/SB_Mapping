@@ -29,7 +29,8 @@ ui <- fluidPage(
    tabsetPanel(type="tabs",
                tabPanel("Map",leafletOutput("map",width = "90%", height = "400px")),
                tabPanel("Table",DT::dataTableOutput("ex1"))
-   )
+   ),
+   textOutput("text1")
   )
   #verbatimTextOutput('summary')
   )
@@ -58,44 +59,47 @@ server <- function(input, output, session) {
     leaflet(finalSegs) %>% addTiles()%>%
       fitBounds(~min(Longs), ~min(Lats), ~max(Longs), ~max(Lats))
   })
-  
+
   observe({
     pal <- colorpal()
 
     popup <- paste0("<strong>Name: </strong>",
                     finalSegs@data$seg_id)
+    
     leafletProxy("map",data=finalSegs) %>%
       clearShapes() %>%
       #addPolylines(color="red",weight=3,popup=~popup)
       addPolylines(color=~pal(dep2030$MEAN_2030),weight=3,popup=~popup)
   })
+  
 
   # Use a separate observer to recreate the legend as needed.
-  observe({
-    pal <- colorpal()
-
-    popup <- paste0("<strong>Name: </strong>",
-                    finalSegs@data$seg_id)
-
-    proxy <- leafletProxy("map",data=finalSegs) %>%
-      clearShapes() %>%
-      #addPolylines(color="red",weight=3,popup=~popup)
-      addPolylines(color=~pal(dep2030$MEAN_2030),weight=3,popup=~popup)
-
-    # Remove any existing legend, and only if the legend is
-    # enabled, create a new one.
-    proxy %>% clearControls()
-    if (input$legend) {
-      pal <- colorpal()
-      proxy %>% addLegend(position = "bottomright",
-                          pal = pal, values = ~dep2030$MEAN_2030
-      )
-    }
-  })
+  # observe({
+  #   pal <- colorpal()
+  # 
+  #   popup <- paste0("<strong>Name: </strong>",
+  #                   finalSegs@data$seg_id)
+  # 
+  #   proxy <- leafletProxy("map",data=finalSegs) %>%
+  #     clearShapes() %>%
+  #     #addPolylines(color="red",weight=3,popup=~popup)
+  #     addPolylines(color=~pal(dep2030$MEAN_2030),weight=3,popup=~popup)
+  # 
+  #   # Remove any existing legend, and only if the legend is
+  #   # enabled, create a new one.
+  #   proxy %>% clearControls()
+  #   if (input$legend) {
+  #     pal <- colorpal()
+  #     proxy %>% addLegend(position = "bottomright",
+  #                         pal = pal, values = ~dep2030$MEAN_2030
+  #     )
+  #   }
+  # })
   # display 10 rows initially
-  output$ex1 <- DT::renderDataTable(
-    DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
-  )
+  # output$ex1 <- DT::renderDataTable(
+  #   DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
+  # )
+  
 }
 
 shinyApp(ui, server)
