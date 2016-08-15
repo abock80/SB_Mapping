@@ -107,6 +107,7 @@ finalSegs<-sp::spTransform(GF_layer,"+init=epsg:4326")
 # This is the reprojection to WGS84 web mercator
 #finalSegs<-sp::spTransform(GF_layer,"+init=epsg:3857")
 finalSegs<-finalSegs[with(finalSegs@data,order(POI_ID)),]
+finalSegs@data$ID<-c(1:185)
 
 # gets the xy points of each line
 res <- lapply(slot(finalSegs, "lines"), function(x) lapply(slot(x, "Lines"),
