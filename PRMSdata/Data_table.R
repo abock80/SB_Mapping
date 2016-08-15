@@ -14,10 +14,10 @@ ui<-shinyUI(navbarPage(
 
 
 server<-shinyServer(function(input, output) {
-  
+  print(dim(FutMM))
   # display 10 rows initially
   output$ex1 <- DT::renderDataTable(
-    DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
+        DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
   )
   
 # -1 means no pagination; the 2nd element contains menu labels
