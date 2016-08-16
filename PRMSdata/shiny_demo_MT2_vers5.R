@@ -9,6 +9,9 @@ y2055=c('ECHAM5','GENMON','GFDL','Mean')
 y2080=c('ECHAM5','GENMON','MEAN',NA)
 dd2<-data.frame(y2030,y2055,y2080)
 yrs<-c('2030','2055','2080')
+SF_vars<-c("Qann", "QSpring","QSummer","QFall","QWinter","QJanuary",
+           "QFebruary","QMarch",'QApril',"QMay","QJune","Qjuly",
+           "QAugust","QSeptember","QOctober","QNovember","QDecember")
 
 
 ui <- fluidPage(
@@ -24,6 +27,17 @@ ui <- fluidPage(
               actionButton("do", "Select Year"),
       
               radioButtons("GCMnames", label="GCM Names", choices="",selected=""),    
+    
+              selectInput("select2", label = h3("Streamflow Variable"), 
+                        choices = list("Qann" = 1, "QSpring" = 2,"QSummer" = 3,
+                        "QFall"=4,"QWinter"=5,"QJanuary"=6,
+                        "QFebruary"=7,"QMarch"=8,'QApril'=9,
+                        "QMay"=10,"QJune"=11,"Qjuly"=12,
+                        "QAugust"=13,"QSeptember"=14,"QOctober"=15,
+                        "QNovember"=16,"QDecember"=17), selected = 1),
+    
+              actionButton("do2", "Select Variable"),
+    
               selectInput("colors", "Color Scheme",
                           rownames(subset(brewer.pal.info, category %in% c("seq", "div")))),
                           checkboxInput("legend", "Show legend", TRUE)),
@@ -58,6 +72,11 @@ server <- function(input, output, session) {
   fut_yr<-eventReactive(input$do,{
     yr<-yrs[as.numeric(input$select)]
     return(yr)
+  })
+  
+  strm_var<-eventReactive(input$do2,{
+    sVar<-SF_vars[as.numeric(input$select2)]
+    return(sVar)
   })
   
   datum<-eventReactive(input$GCMnames,{
@@ -114,7 +133,8 @@ server <- function(input, output, session) {
     if (input$legend) {
       pal <- colorpal()
       proxy %>% addLegend(position = "bottomright",
-                          pal = pal, values = ~datum()
+                          pal = pal, values = ~datum(),
+                          title=paste(strm_var(),input$GCMnames,sep="")
       )
     }
   })
@@ -141,11 +161,12 @@ server <- function(input, output, session) {
   #   DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
   # )
   
-  # output$text1 <- renderText({
-  #   #input$GCMnames
-  #   #input$select
-  #   event$id
-  # })
+  output$text1 <- renderText({
+    input$GCMnames
+    input$select
+    #event$id
+    strm_var()
+  })
   # 
   # output$text2 <- renderText({ 
   #   input$select
