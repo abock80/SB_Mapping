@@ -59,7 +59,7 @@ server <- function(input, output, session) {
   })
   
   datum<-eventReactive(input$GCMnames,{
-    data<-depAll[,paste(input$GCMnames,"_",fut_yr(),sep="")]
+    data<-depAll[,paste(input$GCMnames,"_ann_",fut_yr(),sep="")]
     return (data)
   })
   
@@ -115,20 +115,20 @@ server <- function(input, output, session) {
   # output$ex1 <- DT::renderDataTable(
   #   DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
   # )
-  output$text1 <- renderText({ 
+  output$text1 <- renderText({
     input$GCMnames
     #input$select
   })
-  
-  output$text2 <- renderText({ 
-    input$select
-  })
-  
-  output$text3 <- renderText({ 
-    fut_yr()
-  }) 
-  
-  output$text4 <- renderText({ 
+  # 
+  # output$text2 <- renderText({ 
+  #   input$select
+  # })
+  # 
+  # output$text3 <- renderText({ 
+  #   fut_yr()
+  # }) 
+  # 
+  output$text4 <- renderText({
     datum()
   })
   
