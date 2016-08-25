@@ -31,7 +31,7 @@ avGCM<-function(DF,gcms,yr){
   mean.dat <- data.frame(matrix(unlist(lapply(gcmList, function (x) lapply(x, mean, na.rm=TRUE))),nrow=185,byrow=T))
   colnames(mean.dat)<-paste(gcms,"ann",yr,sep="_")
   mean.dat<-cbind(mean.dat,rowMeans(mean.dat))
-  colnames(mean.dat)<-paste(c(gcms,"MEAN"),"ann",yr,sep="_")
+  colnames(mean.dat)<-paste(c(gcms,"Mean"),"ann",yr,sep="_")
   return(mean.dat)
 }
 
