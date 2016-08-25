@@ -161,12 +161,12 @@ server <- function(input, output, session) {
   #   DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
   # )
   
-  output$text1 <- renderText({
-    input$GCMnames
-    input$select
-    #event$id
-    strm_var()
-  })
+  # output$text1 <- renderText({
+  #   input$GCMnames
+  #   input$select
+  #   #event$id
+  #   strm_var()
+  # })
   # 
   # output$text2 <- renderText({ 
   #   input$select
