@@ -44,7 +44,7 @@ ui <- fluidPage(
 
   mainPanel(
    tabsetPanel(type="tabs",
-               #tabPanel("Map",leafletOutput("map",width = "90%", height = "400px")),
+               tabPanel("Map",leafletOutput("map",width = "90%", height = "400px")),
                tabPanel("Table",DT::dataTableOutput("ex1"))
    ),
    textOutput("text1"),
@@ -95,64 +95,70 @@ server <- function(input, output, session) {
     #colorNumeric(input$colors,depAll$ECHAM5_2030)
   })
 
-  #output$map <- renderLeaflet({
-    ## Use leaflet() here, and only include aspects of the map that
-    ## won't need to change dynamically (at least, not unless the
-    ## entire map is being torn down and recreated).
-    #leaflet(finalSegs) %>% addTiles()%>%
-    #  fitBounds(~min(Longs), ~min(Lats), ~max(Longs), ~max(Lats))
-  #})
+  output$map <- renderLeaflet({
+  # Use leaflet() here, and only include aspects of the map that
+  # won't need to change dynamically (at least, not unless the
+  # entire map is being torn down and recreated).
+  leaflet(finalSegs) %>% addTiles()%>%
+   fitBounds(~min(Longs), ~min(Lats), ~max(Longs), ~max(Lats))
+  })
 
-  # observe({
-  #   pal <- colorpal()
-  # 
-  #   popup <- paste0("<strong>Name: </strong>",
-  #                   finalSegs@data$seg_id)
-  #   
-  #   POI_ID<-c(finalSegs@data$ID)
-  #   
-  #   leafletProxy("map",data=finalSegs) %>%
-  #     clearShapes() %>%
-  #     #addPolylines(color="red",weight=3,popup=~popup)
-  #     addPolylines(color=~pal(datum()),weight=3,layerId=POI_ID,popup=~popup)
-  # })
+  #observe({
+  eventReactive(input$do2,{
+    pal <- colorpal()
 
-  # Use a separate observer to recreate the legend as needed.
-  # observe({
-  #   pal <- colorpal()
-  # 
-  #   popup <- paste0("<strong>Name: </strong>",
-  #                   finalSegs@data$seg_id)
-  #   
-  #   POI_ID<-c(finalSegs@data$ID)
-  # 
-  #   proxy <- leafletProxy("map",data=finalSegs) %>%
-  #     clearShapes() %>%
-  #     #addPolylines(color="red",weight=3,popup=~popup)
-  #     addPolylines(color=~pal(datum()),weight=3,layerId=POI_ID,popup=~popup)
-  # 
-  #   #Remove any existing legend, and only if the legend is
-  #   #enabled, create a new one.
-  #   proxy %>% clearControls()
-  #   if (input$legend) {
-  #     pal <- colorpal()
-  #     proxy %>% addLegend(position = "bottomright",
-  #                         pal = pal, values = ~datum(),
-  #                         title=paste(strm_var(),input$GCMnames,sep="")
-  #     )
-  #   }
-  # })
-  
-  # observeEvent(input$map_shape_click,{
-  #   event <- input$map_shape_click
-  #   
-  #   print(event)  
-  #   values$df_data<-matrix(depAll[event$id,],2,5)
-  #   #print (values$df_data)
-  #   if (is.null(event))
-  #     return()
-  # })
-  # 
+    popup <- paste0("<strong>Name: </strong>",
+                    finalSegs@data$ID)
+
+    seg_ID<-c(finalSegs@data$ID)
+
+    leafletProxy("map",data=finalSegs) %>%
+      clearShapes() %>%
+      #addPolylines(color="red",weight=3,popup=~popup)
+      #addPolylines(color=~pal(datum()),weight=3,layerId=POI_ID,popup=~popup)
+      addPolylines(color=~pal(datum()),weight=3,layerId=seg_ID,popup=~popup)
+  })
+
+  #Use a separate observer to recreate the legend as needed.
+  observe({
+    pal <- colorpal()
+
+    popup <- paste0("<strong>Name: </strong>",
+                    finalSegs@data$ID)
+
+    seg_ID<-c(finalSegs@data$ID)
+
+    proxy <- leafletProxy("map",data=finalSegs) %>%
+      clearShapes() %>%
+      #addPolylines(color="red",weight=3,popup=~popup)
+      #addPolylines(color=~pal(datum()),weight=3,layerId=POI_ID,popup=~popup)
+      addPolylines(color=~pal(datum()),weight=3,layerId=seg_ID,popup=~popup)
+    
+
+    #Remove any existing legend, and only if the legend is
+    #enabled, create a new one.
+    proxy %>% clearControls()
+    if (input$legend) {
+      pal <- colorpal()
+      proxy %>% addLegend(position = "bottomright",
+                          pal = pal, values = ~datum(),
+                          title=paste(strm_var(),input$GCMnames,sep=" ")
+      )
+    }
+  })
+
+  observeEvent(input$map_shape_click,{
+    event <- input$map_shape_click
+
+    print(event)
+    #values$df_data<-matrix(dFrame[event$id,],2,5)
+    values$df_data<-dFrame[event$id,]
+    
+    print (values$df_data)
+    if (is.null(event))
+      return()
+  })
+
   # observeEvent(input$map_shape_click,{
   #   print(dim(values$df_data))
   #   output$ex1 <- DT::renderDataTable(
@@ -165,25 +171,25 @@ server <- function(input, output, session) {
   #   DT::datatable(FutMM, options = list(pageLength = 12),colnames=c("Month","GCM1","GCM2","Mean"))
   # )
   
-  output$text1 <- renderText({
-    input$GCMnames
-  })
-   
-  output$text2 <- renderText({ 
-    strm_var()
-  })
-   
-  output$text3 <- renderText({ 
-    fut_yr()
-  }) 
-
-  output$text4 <- renderText({
-    paste(input$GCMnames,input$select2,fut_yr(),sep="_")
-  })
-  
-  output$text5 <- renderText({ 
-    datum()
-  })
+  # output$text1 <- renderText({
+  #   input$GCMnames
+  # })
+  # 
+  # output$text2 <- renderText({
+  #   strm_var()
+  # })
+  # 
+  # output$text3 <- renderText({
+  #   fut_yr()
+  # })
+  # 
+  # output$text4 <- renderText({
+  #   paste(input$GCMnames,input$select2,fut_yr(),sep="_")
+  # })
+  # 
+  # output$text5 <- renderText({
+  #   datum()
+  # })
   
 }
 
