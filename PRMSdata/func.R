@@ -28,7 +28,7 @@ colN<-function(DF,site){
 avGCM<-function(DF,gcms,yr){
   gcmList<-lapply(gcms,function(x) DF[,grep(x,colnames(DF))])
   #gcmList<-lapply(gcms[1:2],function(x) futData2030[,grep(x,colnames(futData2030))])
-  mean.dat <- data.frame(matrix(unlist(lapply(gcmList, function (x) lapply(x, mean, na.rm=TRUE))),nrow=185,byrow=T))
+  mean.dat <- data.frame(matrix(unlist(lapply(gcmList, function (x) lapply(x, mean, na.rm=TRUE))),nrow=185,byrow=F))
   colnames(mean.dat)<-paste(gcms,"ann",yr,sep="_")
   mean.dat<-cbind(mean.dat,rowMeans(mean.dat))
   colnames(mean.dat)<-paste(c(gcms,"Mean"),"ann",yr,sep="_")
