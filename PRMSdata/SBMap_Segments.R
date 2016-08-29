@@ -76,19 +76,21 @@ avgBase<-colMeans(baseData)
 cNames2030<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
 futData2030<-sb2DF(future_All_2030,cNames2030)
 Avg2030<-avGCM(futData2030,gcms[1:2],"2030")
-dep2030<-sweep(Avg2030,1,avgBase)*100
+#dep2030<-sweep(Avg2030,1,avgBase)*100
+dep2030<-(sweep(Avg2030,1,avgBase)/avgBase)*100
 
 cNames2055<-unlist(lapply(msites,function(x) paste(x,"_",gcms,sep="")))
 futData2055<-sb2DF(future_All_2055,cNames2055)
 Avg2055<-avGCM(futData2055,gcms,"2055")
-dep2055<-sweep(Avg2055,1,avgBase)*100
+#dep2055<-sweep(Avg2055,1,avgBase)*100
+dep2055<-(sweep(Avg2055,1,avgBase)/avgBase)*100
 
 cNames2080<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
 futData2080<-sb2DF(future_All_2080,cNames2080)
 Avg2080<-avGCM(futData2080,gcms[1:2],"2080")
-dep2080<-sweep(Avg2080,1,avgBase)*100
+#dep2080<-sweep(Avg2080,1,avgBase)*100
+dep2080<-(sweep(Avg2080,1,avgBase)/avgBase)*100
 
-#AvgAll<-cbind(Avg2030,Avg2055,Avg2080)
 depAll<<-cbind(dep2030,dep2055,dep2080)
 rownames(depAll)<-colnames(baseData)
 
