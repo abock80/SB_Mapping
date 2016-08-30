@@ -21,7 +21,7 @@ child_item<-sbtools::item_get(sFlow_SBid)
 #*******************************************************************************************
 #*******************************************************************************************
 # Mapping Components
-# WFS for R10U - John "Dell" Long - pySB
+# WFS for R10U 
 # subset of shapefiles on the project page
 # separate call to get subset of features from full WFS
 # use HRUs instead of segments or incremental contributing areas
@@ -40,13 +40,17 @@ GF_layer<-layer[which(layer@data$POI_ID %in% segMap$POI_ID),]
 finalSegs<-sp::spTransform(GF_layer,"+init=epsg:4326")
 # This is the reprojection to WGS84 web mercator
 #finalSegs<-sp::spTransform(GF_layer,"+init=epsg:3857")
-finalSegs<-finalSegs[with(finalSegs@data,order(POI_ID)),]
-finalSegs@data$ID<-c(1:185)
+finalSegs<-finalSegs[order(finalSegs$POI_ID),]
+# Add the basin name, code, and segment number
+# so that they can be used in Shiny
+finalSegs@data$Basin<-segMap$Bode
+finalSegs@data$Code<-segMap$Code
+finalSegs@data$Nseg<-segMap$Nseg
+finalSegs<-finalSegs[order(finalSegs$Nseg),]
 
 # gets the xy points of each line
 res <- lapply(slot(finalSegs, "lines"), function(x) lapply(slot(x, "Lines"),
                                                            function(y) slot(y, "coords")))
-#
 test<-lapply(res, function(x) c(max(unlist(x)),min(unlist(x))))
 Lats<-unlist(test)[c(TRUE,FALSE)]
 Longs<-unlist(test)[c(FALSE,TRUE)]
@@ -67,25 +71,29 @@ future_All_2080<-grep(paste(c("2080"),collapse="_"),sbFiles$fname)
 
 # Hardcoded wastershed and GCM names for column names
 msites<-c("OF","RW","LD","MM","JD","CD","BT")
+#msites<-c("OF","BT","JD","CD","MM","LD","RW")
 # only 2 gcms for 2030, 3 for 2055, 2 for 2080
 gcms<-c("ECHAM5","GENMON","GFDL")
 
 baseData<-sb2DF(baseLine,msites)
 avgBase<-colMeans(baseData)
 
-cNames2030<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
+#cNames2030<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
+cNames2030<-unlist(lapply(msites,function(x) paste(gcms[1:2],"_",x,sep="")))
 futData2030<-sb2DF(future_All_2030,cNames2030)
 Avg2030<-avGCM(futData2030,gcms[1:2],"2030")
 #dep2030<-sweep(Avg2030,1,avgBase)*100
 dep2030<-(sweep(Avg2030,1,avgBase)/avgBase)*100
 
-cNames2055<-unlist(lapply(msites,function(x) paste(x,"_",gcms,sep="")))
+#cNames2055<-unlist(lapply(msites,function(x) paste(x,"_",gcms,sep="")))
+cNames2055<-unlist(lapply(msites,function(x) paste(gcms,"_",x,sep="")))
 futData2055<-sb2DF(future_All_2055,cNames2055)
 Avg2055<-avGCM(futData2055,gcms,"2055")
 #dep2055<-sweep(Avg2055,1,avgBase)*100
 dep2055<-(sweep(Avg2055,1,avgBase)/avgBase)*100
 
-cNames2080<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
+#cNames2080<-unlist(lapply(msites,function(x) paste(x,"_",gcms[1:2],sep="")))
+cNames2080<-unlist(lapply(msites,function(x) paste(gcms[1:2],"_",x,sep="")))
 futData2080<-sb2DF(future_All_2080,cNames2080)
 Avg2080<-avGCM(futData2080,gcms[1:2],"2080")
 #dep2080<-sweep(Avg2080,1,avgBase)*100
@@ -93,6 +101,8 @@ dep2080<-(sweep(Avg2080,1,avgBase)/avgBase)*100
 
 depAll<<-cbind(dep2030,dep2055,dep2080)
 rownames(depAll)<-colnames(baseData)
+#depAll<-depAll[order(row.names(depAll)),]
+
 
 #********************************************************************************************************
 #********************************************************************************************************
