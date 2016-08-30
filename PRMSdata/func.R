@@ -13,14 +13,17 @@ sb2DF<-function(fileList,col_Names){
   # Add timestamps as row names
   row.names(bData)<-rownames(All[[1]])
   # remove columns for seg32 and 34 of the MM river
-  bData<-bData[,-grep(paste(c("seg.32_MM","seg.34_MM"),collapse="|"),colnames(bData))]
+  #bData<-bData[,-grep(paste(c("seg.32_MM","seg.34_MM"),collapse="|"),colnames(bData))]
+  bData<-bData[,-grep(paste(c("MM_seg.32","MM_seg.34"),collapse="|"),colnames(bData))]
   return(bData)
 }
 
 # function to add the column names for each site or the GCM names to the dataframe
 colN<-function(DF,site){
   print(site)
-  colnames(DF)<-paste(colnames(DF),"_",site,sep="")
+  #colnames(DF)<-paste(colnames(DF),"_",site,sep="")
+  colnames(DF)<-paste(site,"_",colnames(DF),sep="")
+  print(colnames(DF))
   return (DF)
 }
 
