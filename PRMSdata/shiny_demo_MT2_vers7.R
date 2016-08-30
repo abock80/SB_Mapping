@@ -108,9 +108,9 @@ server <- function(input, output, session) {
     pal <- colorpal()
 
     popup <- paste0("<strong>Name: </strong>",
-                    finalSegs@data$ID)
+                    finalSegs@data$Nseg)
 
-    seg_ID<-c(finalSegs@data$ID)
+    seg_ID<-c(finalSegs@data$Nseg)
 
     leafletProxy("map",data=finalSegs) %>%
       clearShapes() %>%
@@ -124,9 +124,9 @@ server <- function(input, output, session) {
     pal <- colorpal()
 
     popup <- paste0("<strong>Name: </strong>",
-                    finalSegs@data$ID)
+                    finalSegs@data$Nseg)
 
-    seg_ID<-c(finalSegs@data$ID)
+    seg_ID<-c(finalSegs@data$Nseg)
 
     proxy <- leafletProxy("map",data=finalSegs) %>%
       clearShapes() %>%
