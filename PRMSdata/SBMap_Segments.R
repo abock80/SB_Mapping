@@ -43,7 +43,7 @@ finalSegs<-sp::spTransform(GF_layer,"+init=epsg:4326")
 finalSegs<-finalSegs[order(finalSegs$POI_ID),]
 # Add the basin name, code, and segment number
 # so that they can be used in Shiny
-finalSegs@data$Basin<-segMap$Bode
+finalSegs@data$Basin<-segMap$Basin
 finalSegs@data$Code<-segMap$Code
 finalSegs@data$Nseg<-segMap$Nseg
 finalSegs<-finalSegs[order(finalSegs$Nseg),]
